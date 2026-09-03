@@ -1,6 +1,7 @@
 <script>
   import { invoke } from "@tauri-apps/api/core";
   import { onMount, onDestroy } from "svelte";
+  import QRCode from "qrcode";
 
   // ---- i18n ----
   const translations = {
@@ -9,8 +10,11 @@
       scanning: "Scansione...",
       gbaOnly: "Solo finestre GBA",
       autoScan: "Auto-scan: 3s",
-      server: "Server:",
-      controllerOverStream: "Controller over Stream",
+      server: "Server",
+      controller: "Controller",
+      controllerUsb: "USB",
+      controllerNone: "None",
+      controllerVirtual: "Virtual",
       clickToCopy: "Click per copiare",
       slot: "Slot",
       windowTitle: "Titolo finestra",
@@ -38,14 +42,21 @@
       sourceLabel: "Sorgente",
       waylandAlert: "WAYLAND rilevato",
       waylandSelectOrder: "Seleziona nell'ordine:",
+      qr: "Codici QR",
+      showQr: "Mostra QR",
+      hideQr: "Nascondi QR",
+      scanQr: "Scansiona il codice QR per connetterti", 
     },
     en: {
       refresh: "Refresh",
       scanning: "Scanning...",
       gbaOnly: "GBA windows only",
       autoScan: "Auto-scan: 3s",
-      server: "Server:",
-      controllerOverStream: "Controller over Stream",
+      server: "Server",
+      controller: "Controller",
+      controllerUsb: "USB",
+      controllerNone: "None",
+      controllerVirtual: "Virtual",
       clickToCopy: "Click to copy",
       slot: "Slot",
       windowTitle: "Window title",
@@ -73,11 +84,80 @@
       sourceLabel: "Source",
       waylandAlert: "WAYLAND detected",
       waylandSelectOrder: "Select in order:",
+      qr: "QR Codes",
+      showQr: "Show QR",
+      hideQr: "Hide QR",
+      scanQr: "Scan the QR code to connect",
     },
+    es:{
+      refresh: "Actualizar",
+      scanning: "Escaneando...",
+      gbaOnly: "Solo ventanas GBA",
+      autoScan: "Auto-escaneo: 3s",
+      server: "Servidor",
+      controller: "Controlador",
+      controllerUsb: "USB",
+      controllerNone: "Ninguno",
+      controllerVirtual: "Virtual",
+      clickToCopy: "Haga clic para copiar",
+      slot: "Slot",
+      windowTitle: "Título de la ventana",
+      size: "Tamaño",
+      status: "Estado",
+      startStream: "Iniciar stream",
+      stop: "Detener",
+      noWindows: "No se encontraron ventanas",
+      windowsLabel: "ventanas",
+      activeStreams: "streams activos",
+      interfaces: "interfaces de red",
+      language: "Idioma",
+      mode: "Modo",
+      mjpeg: "MJPEG",
+      webrtc: "WebRTC",
+      webrtcPlus: "WebRTC++",
+      webrtcVp9: "WebRTC VP9",
+      waylandTitle: "Modo Wayland",
+      waylandHintBefore: "Wayland prohibe la enumeración automática de ventanas. ",
+      waylandHintAction: "Haga clic en el botón",
+      waylandHintAfter: " para seleccionar las ventanas GBA en orden a través del diálogo del portal del sistema.",
+      selectGbaWindows: "Seleccionar ventanas GBA",
+      noWaylandSourcesYet: "Aún no se ha seleccionado ninguna fuente. Haga clic en el botón de arriba para abrir el portal.",
+      assignSlot: "Asignar",
+      sourceLabel: "Fuente",
+      waylandAlert: "WAYLAND detectado",
+      waylandSelectOrder: "Seleccionar en orden:",
+      qr: "Codigo QR",
+      showQr: "Mostrar QR",
+      hideQr: "Ocultar QR",
+      scanQr: "Escanee el código QR para conectarse",
+    }
   };
 
+  // Settings helpers
+  const STORAGE_PREFIX = "gba-orca-";
+
+  /** @param {string} key @param {*} fallback */
+  function loadSetting(key, fallback) {
+    try {
+      const raw = localStorage.getItem(STORAGE_PREFIX + key);
+      if (raw === null) return fallback;
+      return JSON.parse(raw);
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  /** @param {string} key @param {*} value */
+  function saveSetting(key, value) {
+    try {
+      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(value));
+    } catch (e) {
+      console.error("saveSetting:", key, e);
+    }
+  }
+
   function detectLang() {
-    const saved = localStorage.getItem("gba-orca-lang");
+    const saved = loadSetting("lang", null);
     if (saved && translations[saved]) return saved;
     const sys = (navigator.language || navigator.userLanguage || "en").toLowerCase();
     return sys.startsWith("it") ? "it" : "en";
@@ -85,19 +165,32 @@
 
   let lang = detectLang();
   $: t = translations[lang];
-  $: localStorage.setItem("gba-orca-lang", lang);
+  $: saveSetting("lang", lang);
 
-  // ---- stato applicazione ----
+  // Application state
   let windows = [];
   let streams = {};
   let server = { interfaces: [], port: 8080, webrtc_port: 8889 };
-  let selectedIp = "";
-  let gbaOnly = true;
+
+  let selectedIp = loadSetting("selectedIp", "");
+  let gbaOnly = loadSetting("gbaOnly", true);
+  let streamMode = loadSetting("streamMode", "WebrtcPlus");
+  let controller = loadSetting("controller", 0);
+
   let loading = false;
   let error = "";
   let autoScanInterval = null;
-  let streamMode = "mjpeg";
-  let controllerOverStream = false;
+
+  //Implements QR code for each stream, so the user can scan it with their phone and open the stream in a browser.
+  let showQr = false;
+  let qrCodes = {};
+
+  let settingsLoaded = false;
+
+  $: if (settingsLoaded) saveSetting("selectedIp", selectedIp);
+  $: if (settingsLoaded) saveSetting("gbaOnly", gbaOnly);
+  $: if (settingsLoaded) saveSetting("streamMode", streamMode);
+  $: if (settingsLoaded) saveSetting("controller", controller);
 
   // Wayland-specific state. On Wayland we cannot enumerate windows: the user
   // must pick them via xdg-desktop-portal, then assign each captured PipeWire
@@ -113,6 +206,38 @@
     return `${serverUrl}/v/${slot}`;
   }
 
+  /*Function to generate QR codes for each stream URL.
+  This will create a QR code for each of the 4 slots, which can be scanned by a mobile device to open the stream in a browser.*/
+  async function generateQrCodes() {
+    if (!selectedIp) return;
+    const codes = {};
+    for (let slot = 1; slot <= 4; slot++) {
+        const url = `${serverUrl}/v/${slot}`;
+        try {
+          codes[slot] = await QRCode.toDataURL(url, {
+            width: 220,
+            margin: 2,
+          });
+        }catch(e) {
+          console.error(`Error generating QR for slot ${slot}:`, e);
+      }
+    }
+    qrCodes = codes;
+  }
+  // Toggle the visibility of QR codes. If they are not generated yet, generate them first.
+  async function toggleQr() {
+    if(!showQr) {
+      await generateQrCodes();
+    }
+    showQr = !showQr;
+  }
+  // If the selected IP changes, regenerate the QR codes to reflect the new server URL.
+  async function handleIpChange() {
+    if (showQr){
+        await generateQrCodes();
+    }
+  }
+
   function modeLabel(mode) {
     if (mode === "WebrtcPlus") return "WebRTC++";
     if (mode === "WebrtcVp9") return "WebRTC VP9";
@@ -123,9 +248,11 @@
   async function loadServerInfo() {
     try {
       server = await invoke("get_server_info");
-      if (server.interfaces.length > 0 && !selectedIp) {
+      const knownIps = server.interfaces.map((iface) => iface.ip);
+      if (server.interfaces.length > 0 && (!selectedIp || !knownIps.includes(selectedIp))) {
         selectedIp = server.interfaces[0].ip;
       }
+
     } catch (e) {
       console.error("server info:", e);
     }
@@ -196,9 +323,9 @@
     }
   }
 
-  async function toggleControllerOverStream() {
+  async function selectController() {
     try {
-      await invoke("set_remote_controller", { enabled: controllerOverStream });
+      await invoke("set_remote_controller", { controller });
     } catch (e) {
       console.error("set_remote_controller:", e);
     }
@@ -247,16 +374,26 @@
 
   onMount(async () => {
     await loadServerInfo();
+
+    // Load saved controller preference
     try {
-      controllerOverStream = await invoke("get_remote_controller");
+      const backendController = await invoke("get_remote_controller");
+      if (controller !== backendController) {
+        await invoke("set_remote_controller", { controller });
+      }
     } catch (e) {
-      controllerOverStream = false;
+      // leave the persisted/default controller value as-is
     }
+
     try {
       isWayland = await invoke("is_wayland");
     } catch (e) {
       isWayland = false;
     }
+
+    // From here on, changes to persisted settings should be saved.
+    settingsLoaded = true;
+
     if (isWayland) {
       await refreshWaylandSources();
       await refreshStreams();
@@ -274,9 +411,6 @@
 </script>
 
 <div class="app">
-  <div class="titlebar">
-    GBA Orca
-  </div>
 
   {#if isWayland}
     <div class="wayland-banner">
@@ -288,6 +422,64 @@
       <span class="wayland-slot">GBA4</span>
     </div>
   {/if}
+
+  <div class="server-row">
+    <label>{t.server}:</label>
+    {#if server.interfaces.length > 1}
+      <select bind:value={selectedIp} on:change={handleIpChange}>
+      {#each server.interfaces as iface}
+          <option value={iface.ip}>
+              {iface.ip} — {iface.name}
+          </option>
+      {/each}
+    </select>
+    {/if}
+    <code on:click={() => copyToClipboard(serverUrl)} title={t.clickToCopy}>
+      {serverUrl}
+    </code>
+    <button
+        class="qr-toggle"
+        on:click={toggleQr}
+        title={showQr ? t.hideQr : t.showQr}
+    >
+        {showQr ? t.hideQr : t.showQr}
+    </button>
+  </div>
+
+
+{#if showQr}
+    <div class="qr-section">
+        <div class="qr-section-header">
+            <strong>{t.qr}</strong>
+            <span>{t.scanQr}</span>
+        </div>
+
+        <div class="qr-grid">
+            {#each [1, 2, 3, 4] as slot}
+                <div class="qr-item">
+                    <div class="qr-slot">
+                        {t.slot} {slot}
+                    </div>
+
+                    {#if qrCodes[slot]}
+                        <img
+                            src={qrCodes[slot]}
+                            alt={`${t.qr} ${t.slot} ${slot}`}
+                        />
+
+                        <code>
+                            {serverUrl}/v/{slot}
+                        </code>
+                    {:else}
+                        <div class="qr-loading">
+                            ...
+                        </div>
+                    {/if}
+                </div>
+            {/each}
+        </div>
+    </div>
+{/if}
 
   <div class="toolbar">
     {#if isWayland}
@@ -307,15 +499,19 @@
     <label class="chk">
       {t.mode}:
       <select bind:value={streamMode}>
-        <option value="mjpeg">{t.mjpeg}</option>
-        <option value="webrtc">{t.webrtc}</option>
-        <option value="webrtc++">{t.webrtcPlus}</option>
-        <option value="webrtc-vp9">{t.webrtcVp9}</option>
+        <option value="WebrtcPlus">{t.webrtcPlus}</option>
+        <option value="Webrtc">{t.webrtc}</option>
+        <option value="MJPEG">{t.mjpeg}</option>
+        <option value="WebrtcVp9">{t.webrtcVp9}</option>
       </select>
     </label>
     <label class="chk">
-      <input type="checkbox" bind:checked={controllerOverStream} on:change={toggleControllerOverStream} />
-      {t.controllerOverStream}
+    {t.controller}:
+      <select bind:value={controller} on:change={selectController}>
+        <option value={0}>{t.controllerNone}</option>
+        <option value={1}>{t.controllerUsb}</option>
+        <option value={2}>{t.controllerVirtual}</option>
+      </select>
     </label>
     <span class="sep"></span>
     {#if isWayland}
@@ -329,22 +525,9 @@
       <select bind:value={lang}>
         <option value="it">Italiano</option>
         <option value="en">English</option>
+        <option value="es">Español</option>
       </select>
     </label>
-  </div>
-
-  <div class="server-row">
-    <label>{t.server}</label>
-    {#if server.interfaces.length > 1}
-      <select bind:value={selectedIp}>
-        {#each server.interfaces as iface}
-          <option value={iface.ip}>{iface.ip} — {iface.name}</option>
-        {/each}
-      </select>
-    {/if}
-    <code on:click={() => copyToClipboard(serverUrl)} title={t.clickToCopy}>
-      {serverUrl}
-    </code>
   </div>
 
   {#if error}
@@ -362,7 +545,7 @@
             <th style="width:50px">{t.slot}</th>
             <th>{t.sourceLabel}</th>
             <th style="width:120px">{t.assignSlot}</th>
-            <th style="width:320px">{t.status}</th>
+            <th style="width:340px">{t.status}</th>
           </tr>
         </thead>
         <tbody>
@@ -420,7 +603,7 @@
             <th>{t.windowTitle}</th>
             <th style="width:80px">PID</th>
             <th style="width:90px">{t.size}</th>
-            <th style="width:320px">{t.status}</th>
+            <th style="width:380px">{t.status}</th>
           </tr>
         </thead>
         <tbody>
@@ -489,14 +672,6 @@
     height: 100vh;
   }
 
-  .titlebar {
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
-    padding: 6px 10px;
-    font-weight: 600;
-    font-size: 13px;
-  }
-
   .toolbar {
     background: #fff;
     border-bottom: 1px solid #e0e0e0;
@@ -556,6 +731,13 @@
     border: 1px solid #ccc;
     padding: 2px 6px;
     cursor: pointer;
+    height: 24px;
+    box-sizing: border-box;
+  }
+
+  .server-row code {
+    display: inline-flex;
+    align-items: center;
   }
 
   .server-row code:hover,
@@ -642,7 +824,6 @@
     background: #e0e0e0;
     color: #555;
     vertical-align: middle;
-    margin-right: 4px;
   }
 
   .mode-badge.webrtc {
@@ -764,4 +945,73 @@
     color: #0078d7;
     font-weight: 700;
   }
+
+.qr-toggle {
+    margin-left: auto;
+}
+
+.qr-section {
+    background: #f8f8f8;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 16px 16px;
+}
+
+.qr-section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.qr-section-header strong {
+    font-size: 14px;
+}
+
+.qr-section-header span {
+    font-size: 12px;
+    color: #666;
+}
+
+.qr-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.qr-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.qr-slot {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.qr-item img {
+    width: 160px;
+    height: 160px;
+    background: white;
+    border: 1px solid #ccc;
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+.qr-item code {
+    font-family: "Consolas", monospace;
+    font-size: 10px;
+    color: #555;
+}
+
+.qr-loading {
+    width: 160px;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eee;
+    color: #777;
+}
 </style>

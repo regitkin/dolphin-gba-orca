@@ -1,0 +1,203 @@
+#iframe {
+    height: 70% !important;
+}
+
+#virtual-controller {
+  position: fixed;
+  left: 20px;
+  right: 20px;
+  bottom: 30px;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 10000;
+}
+
+#virtual-controller .vc-btn {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  font-family: sans-serif;
+  font-weight: 700;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  background: rgba(30, 30, 30, 0.75);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+#virtual-controller .vc-btn:active,
+#virtual-controller .vc-btn.pressed {
+  background: rgba(100, 100, 100, 0.9);
+  transform: scale(0.94);
+}
+
+#virtual-controller .vc-shoulders {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+#virtual-controller .vc-l,
+#virtual-controller .vc-r {
+  width: 64px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+#virtual-controller .vc-main {
+  width: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#virtual-controller .vc-dpad {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#virtual-controller .vc-dpad .vc-btn {
+  position: absolute;
+  width: 33%;
+  height: 33%;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+#virtual-controller .vc-hit {
+  position: absolute;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+#virtual-controller .vc-hit-up {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 33%;
+  z-index: 2;
+}
+
+#virtual-controller .vc-hit-down {
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 33%;
+  z-index: 2;
+}
+
+#virtual-controller .vc-hit-left-main {
+  left: 0;
+  top: 33%;
+  width: 50%;
+  height: 33%;
+  z-index: 1;
+}
+
+#virtual-controller .vc-hit-left-bar {
+  left: -14%;
+  top: 0;
+  width: 14%;
+  height: 100%;
+  z-index: 1;
+}
+
+#virtual-controller .vc-hit-right-main {
+  right: 0;
+  top: 33%;
+  width: 50%;
+  height: 33%;
+  z-index: 1;
+}
+
+#virtual-controller .vc-hit-right-bar {
+  left: 100%;
+  top: 0;
+  width: 14%;
+  height: 100%;
+  z-index: 1;
+}
+
+#virtual-controller .vc-up {
+  left: 33%;
+  top: 0;
+}
+
+#virtual-controller .vc-down {
+  left: 33%;
+  bottom: 0;
+}
+
+#virtual-controller .vc-left {
+  left: 0;
+  top: 33%;
+}
+
+#virtual-controller .vc-right {
+  right: 0;
+  top: 33%;
+}
+
+#virtual-controller .vc-center {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#virtual-controller .vc-select,
+#virtual-controller .vc-start {
+  width: 62px;
+  height: 28px;
+  border-radius: 14px;
+  font-size: 9px;
+}
+
+#virtual-controller .vc-face {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+#virtual-controller .vc-face .vc-btn {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+#virtual-controller .vc-face .vc-hit {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+}
+
+#virtual-controller .vc-a {
+  right: 0px;
+  top: 18px;
+}
+
+#virtual-controller .vc-b {
+  left: 0px;
+  bottom: 18px;
+}
+
+#virtual-controller .vc-hit-a {
+  right: -10px;
+  top: 8px;
+}
+
+#virtual-controller .vc-hit-b {
+  left: -10px;
+  bottom: 8px;
+}

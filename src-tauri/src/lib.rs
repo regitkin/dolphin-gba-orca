@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU8};
 
 use tauri::{Manager, State};
 
@@ -45,7 +46,7 @@ pub(crate) struct SharedState {
     /// for port 1935). std::sync::Mutex would deadlock across the spawn's
     /// .await; tokio::sync::Mutex is safe to hold over awaits.
     pub mediamtx_starter: Arc<tokio::sync::Mutex<()>>,
-    pub remote_controller: Arc<std::sync::atomic::AtomicBool>,
+    pub remote_controller: Arc<AtomicU8>,
 }
 
 impl Default for SharedState {
@@ -54,9 +55,18 @@ impl Default for SharedState {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             mediamtx: Arc::new(Mutex::new(MediamtxState::default())),
             mediamtx_starter: Arc::new(tokio::sync::Mutex::new(())),
-            remote_controller: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            remote_controller: Arc::new(AtomicU8::new(RemoteController::default() as u8)),
         }
     }
+}
+
+#[repr(u8)]
+#[derive(Default)]
+pub(crate) enum RemoteController {
+    #[default]
+    None = 0,
+    Usb = 1,
+    Virtual = 2,
 }
 
 /// Create a Windows Job Object with KILL_ON_JOB_CLOSE and assign the current
@@ -135,12 +145,12 @@ fn is_wayland() -> bool {
 }
 
 #[tauri::command]
-fn set_remote_controller(state: State<'_, SharedState>, enabled: bool) {
-    state.remote_controller.store(enabled, std::sync::atomic::Ordering::Relaxed);
+fn set_remote_controller(state: State<'_, SharedState>, controller: u8) {
+    state.remote_controller.store(controller, std::sync::atomic::Ordering::Relaxed);
 }
 
 #[tauri::command]
-fn get_remote_controller(state: State<'_, SharedState>) -> bool {
+fn get_remote_controller(state: State<'_, SharedState>) -> u8 {
     state.remote_controller.load(std::sync::atomic::Ordering::Relaxed)
 }
 

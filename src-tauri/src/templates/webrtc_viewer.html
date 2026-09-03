@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Orca GBA {slot}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{width:100%;height:100%;background:rgb(30, 30, 30);overflow:hidden}
+        iframe{width:100%;height:{height};border:none;z-index:1;position:relative;pointer-events:none;}
+        {gp_css}
+    </style>
+</head>
+
+<body>
+    <iframe id="player"></iframe>
+    {gp_html}
+    <script>
+        document.getElementById('player').src = 'http://' + window.location.hostname + ':{webrtc_port}/slot{slot}';
+    </script>
+    <script>
+        {gp_js}
+    </script>
+</body>
+
+</html>
