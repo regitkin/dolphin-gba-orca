@@ -1,5 +1,6 @@
-#iframe {
-    height: 70% !important;
+/* Keep taps on the WebRTC player from stealing touches meant for the pad. */
+#player {
+  pointer-events: none;
 }
 
 #virtual-controller {

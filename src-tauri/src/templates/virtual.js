@@ -2,6 +2,10 @@ const SLOT={slot};
 
 let ws=null;
 let prevBuf=null;
+// Current button state, kept even while the socket is closed so that a press
+// made before (re)connecting is delivered as soon as the socket opens.
+const state=new Uint8Array(32);
+let reconnectTimer=null;
 
 const buttonIndices={
   a:      0,
@@ -34,6 +38,7 @@ function connectVirtualController(){
   ws.onclose=()=>{
     ws=null;
     prevBuf=null;
+    scheduleReconnect();
   };
 
   ws.onerror=()=>{
@@ -41,6 +46,14 @@ function connectVirtualController(){
       if(ws) ws.close();
     }catch(e){}
   };
+}
+
+function scheduleReconnect(){
+  if(reconnectTimer) return;
+  reconnectTimer=setTimeout(()=>{
+    reconnectTimer=null;
+    connectVirtualController();
+  },1000);
 }
 
 function bufEqual(a,b){
@@ -54,11 +67,10 @@ function bufEqual(a,b){
 function sendState(){
   if(!ws||ws.readyState!==1) return;
 
-  const buf=new Uint8Array(32);
-
   // Axes remain zero for the virtual controller.
   // Buttons occupy bytes 16..31, matching Web Gamepad API indices.
-  
+  const buf=new Uint8Array(state);
+
   if(!bufEqual(buf,prevBuf)){
     ws.send(buf);
     prevBuf=buf;
@@ -66,22 +78,17 @@ function sendState(){
 }
 
 function setButton(name,pressed){
-  if(!ws||ws.readyState!==1) return;
-
   const index=buttonIndices[name];
   if(index===undefined) return;
 
   // Web Gamepad buttons begin at byte 16.
-  const buf=prevBuf
-    ? new Uint8Array(prevBuf)
-    : new Uint8Array(32);
+  state[16+index]=pressed?1:0;
 
-  buf[16+index]=pressed?1:0;
-
-  if(!bufEqual(buf,prevBuf)){
-    ws.send(buf);
-    prevBuf=buf;
+  if(!ws||ws.readyState!==1){
+    connectVirtualController();
+    return;
   }
+  sendState();
 }
 
 function bindButton(button){
@@ -91,11 +98,6 @@ function bindButton(button){
   const press=e=>{
     e.preventDefault();
 
-    if(!ws||ws.readyState!==1){
-      connectVirtualController();
-      return;
-    }
-
     button.classList.add('pressed');
     setButton(name,true);
   };
@@ -104,10 +106,7 @@ function bindButton(button){
     e.preventDefault();
 
     button.classList.remove('pressed');
-
-    if(ws&&ws.readyState===1){
-      setButton(name,false);
-    }
+    setButton(name,false);
   };
 
   button.addEventListener('pointerdown',press);
@@ -162,9 +161,6 @@ function bindButtonGroup(group){
     activePointerId=e.pointerId;
     try{ group.setPointerCapture(e.pointerId); }catch(err){}
 
-    if(!ws||ws.readyState!==1){
-      connectVirtualController();
-    }
     press(control);
   });
 

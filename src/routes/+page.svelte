@@ -141,7 +141,12 @@
     try {
       const raw = localStorage.getItem(STORAGE_PREFIX + key);
       if (raw === null) return fallback;
-      return JSON.parse(raw);
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        // Older versions stored plain strings (e.g. lang = "it"), not JSON.
+        return typeof fallback === "string" || fallback === null ? raw : fallback;
+      }
     } catch (e) {
       return fallback;
     }
@@ -210,9 +215,12 @@
   This will create a QR code for each of the 4 slots, which can be scanned by a mobile device to open the stream in a browser.*/
   async function generateQrCodes() {
     if (!selectedIp) return;
+    // Build from selectedIp directly: when called from on:change the reactive
+    // serverUrl has not been recomputed yet and would still hold the old IP.
+    const base = `http://${selectedIp}:${server.port}`;
     const codes = {};
     for (let slot = 1; slot <= 4; slot++) {
-        const url = `${serverUrl}/v/${slot}`;
+        const url = `${base}/v/${slot}`;
         try {
           codes[slot] = await QRCode.toDataURL(url, {
             width: 220,
