@@ -13,7 +13,11 @@
   align-items: center;
   justify-content: flex-end;
   pointer-events: none;
+  touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   z-index: 10000;
 }
 
@@ -29,6 +33,20 @@
   background: rgba(30, 30, 30, 0.75);
   color: white;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+#virtual-controller .vc-arrow {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+#virtual-controller .vc-arrow svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  pointer-events: none;
 }
 
 #virtual-controller .vc-btn:active,
@@ -66,6 +84,11 @@
   touch-action: none;
 }
 
+#virtual-controller .vc-face,
+#virtual-controller .vc-dpad .vc-btn {
+  touch-action: none;
+}
+
 #virtual-controller .vc-dpad .vc-btn {
   position: absolute;
   width: 33%;
@@ -79,6 +102,7 @@
   position: absolute;
   pointer-events: auto;
   box-sizing: border-box;
+  touch-action: none;
 }
 
 #virtual-controller .vc-hit-up {
