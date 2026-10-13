@@ -2,7 +2,7 @@
 
 Stream Dolphin's GBA windows to phones and tablets on your local network.
 
-When you play GameCube games that use GBA-link features, Dolphin opens separate GBA windows on your PC. GBA Orca picks up those windows and streams each one to a browser on any device connected to the same Wi-Fi or LAN. You can send inputs back to the host PC with a USB controller or with the virtual joypad.
+When you play GameCube games that use GBA-link features, Dolphin opens separate GBA windows on your PC. GBA Orca picks up those windows and streams each one to a browser on any device connected to the same Wi-Fi or LAN. You can send inputs back to the host PC with a physical controller or with the virtual joypad on the web page.
 
 ## How it works
 
@@ -44,14 +44,14 @@ This feature lets players control Dolphin on the PC from their phone or tablet. 
 Pick the mode from the **Controller over Stream** menu in the app:
 
 - **None** — viewers only watch the stream.
-- **USB** — players use a physical controller connected to their phone or tablet.
-- **Virtual** — an on-screen joypad (D-pad, A, B, L, R, Select, Start) appears under the video. No extra hardware needed.
+- **Physical controller** — players use a physical controller connected to their phone or tablet.
+- **Virtual (on web page)** — an on-screen joypad (D-pad, A, B, L, R, Select, Start) appears under the video. No extra hardware needed.
 
 The setting applies to all slots. Choose it before players open their link; if you change it later, they need to refresh the page.
 
 > **Note:** For best compatibility, use **Chrome** (latest version). **iOS** may not work correctly — to be tested.
 
-**USB mode, on the viewer (phone / tablet):**
+**Physical controller mode, on the viewer (phone / tablet):**
 - The page auto-detects the gamepad as soon as you press any button.
 - Once connected, the notification shows **"Connected"**.
 - If the controller disconnects, the notification reappears automatically.
