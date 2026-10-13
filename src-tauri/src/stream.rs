@@ -35,10 +35,10 @@ pub enum StreamMode {
 impl StreamMode {
     pub fn parse(s: &str) -> AppResult<Self> {
         match s {
-            "mjpeg" => Ok(Self::Mjpeg),
-            "webrtc" => Ok(Self::Webrtc),
-            "webrtc++" => Ok(Self::WebrtcPlus),
-            "webrtc-vp9" => Ok(Self::WebrtcVp9),
+            "MJPEG" => Ok(Self::Mjpeg),
+            "Webrtc" => Ok(Self::Webrtc),
+            "WebrtcPlus" => Ok(Self::WebrtcPlus),
+            "WebrtcVp9" => Ok(Self::WebrtcVp9),
             other => Err(AppError::Msg(format!("Modalità non valida: {}", other))),
         }
     }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Orca GBA {slot}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{width:100%;height:100%;background:rgb(30, 30, 30);overflow:hidden}
+        .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+        img{
+          width:100%;
+          height:{height};
+          object-fit:contain;
+          image-rendering:pixelated;
+          transition:transform .15s ease;
+        }
+        body.rot img{
+          width:100vh;
+          height:100vw;
+          transform:rotate(90deg);
+        }
+        .rot-btn{
+          position:fixed;
+          bottom:14px;
+          right:14px;
+          width:44px;
+          height:44px;
+          border:none;
+          border-radius:50%;
+          background:rgba(255,255,255,.18);
+          color:#fff;
+          font-size:22px;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          -webkit-tap-highlight-color:transparent;
+          z-index:10;
+          backdrop-filter:blur(4px);
+        }
+        .rot-btn:active{background:rgba(255,255,255,.35)}
+        {gp_css}
+    </style>
+</head>
+
+<body>
+    <div class="wrap"><img src="/stream/{slot}" alt="GBA{slot}"></div>
+    <button class="rot-btn" onclick="document.body.classList.toggle('rot')" title="Ruota">⟳</button>
+    {gp_html}
+    <script>
+        {gp_js}
+    </script>
+</body>
+
+</html>
