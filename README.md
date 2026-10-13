@@ -23,8 +23,10 @@ GBA Orca finds the GBA windows automatically, captures each one with FFmpeg, and
 2. Start Dolphin and a game with controllers set to **GBA (Integrated)**. Dolphin will open the GBA windows.
 3. Open GBA Orca — it lists every GBA window it sees.
 4. Click **Start stream** on each one you want to share.
-5. Send each player the stream URL shown in the app (something like `http://192.168.1.42:8080/v/1`).
+5. Send each player the stream URL shown in the app (something like `http://192.168.1.42:8080/v/1`), or click **Show QR** and let them scan the code for their slot.
 6. On the phone, the round button at the bottom-right rotates the video 90° for landscape play.
+
+The app is available in Italian, English and Spanish. Your settings (network interface, streaming mode, controller, language) are remembered between sessions.
 
 You can select the streaming mode:
 
@@ -37,25 +39,35 @@ The app rescans every 3 seconds, so closing or restarting Dolphin mid-session is
 
 ### Controller over Stream
 
- 
-This feature allows players to use a physical controller connected to their phone or tablet to control Dolphin running on the PC. It works with **all streaming modes** (MJPEG and WebRTC).
+This feature lets players control Dolphin on the PC from their phone or tablet. It works with **all streaming modes** (MJPEG and WebRTC).
+
+Pick the mode from the **Controller over Stream** menu in the app:
+
+- **None** — viewers only watch the stream.
+- **USB** — players use a physical controller connected to their phone or tablet.
+- **Virtual** — an on-screen joypad (D-pad, A, B, L, R, Select, Start) appears under the video. No extra hardware needed.
+
+The setting applies to all slots. Choose it before players open their link; if you change it later, they need to refresh the page.
 
 > **Note:** For best compatibility, use **Chrome** (latest version). **iOS** may not work correctly — to be tested.
 
-Before clicking **Start stream**, enable the **Controller over Stream** checkbox. 
-
-**On the viewer (phone / tablet):**
+**USB mode, on the viewer (phone / tablet):**
 - The page auto-detects the gamepad as soon as you press any button.
 - Once connected, the notification shows **"Connected"**.
 - If the controller disconnects, the notification reappears automatically.
 - Press **×** on the notification to permanently hide it (refresh the page to restore it).
 
-**On the PC (Dolphin setup):**
-GBA Orca converts the controller input received from the player’s device into local input events on the PC, so you must bind each slot to the correct keys in Dolphin.
+**Virtual mode, on the viewer (phone / tablet):**
+- The video takes the top of the screen and the joypad sits below it.
+- You can slide your finger across the D-pad, or between A and B, without lifting it.
+- If the connection drops (screen off, Wi-Fi blip), the joypad reconnects on its own.
+
+**On the PC (Dolphin setup, both modes):**
+GBA Orca converts the input received from the player’s device into local input events on the PC, so you must bind each slot to the correct keys in Dolphin.
 
 1. In Dolphin, go to **Controllers → GBA (Integrated)** and pick the slot you are streaming.
 2. Set the device to **Keyboard**. IMPORTANT!!
-3. Map each GBA button to a keyboard key by pressing the desired key on your controller.
+3. Map each GBA button to a keyboard key by pressing the desired key on your controller (or the matching button on the virtual joypad).
 
 
 > **Note:** Controller over Stream currently requires **Windows**. The WebSocket endpoint is available on Linux but key injection is not yet implemented.
