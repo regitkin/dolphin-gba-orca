@@ -77,8 +77,8 @@ fn setup_job_object() {
     use windows::core::PCWSTR;
     use windows::Win32::Foundation::HANDLE;
     use windows::Win32::System::JobObjects::{
-        AssignProcessToJobObject, CreateJobObjectW, JobObjectBasicLimitInformation,
-        SetInformationJobObject, JOBOBJECT_BASIC_LIMIT_INFORMATION,
+        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
+        SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
         JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
     };
     use windows::Win32::System::Threading::GetCurrentProcess;
@@ -92,14 +92,16 @@ fn setup_job_object() {
             }
         };
 
-        let mut info = JOBOBJECT_BASIC_LIMIT_INFORMATION::default();
-        info.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        // KILL_ON_JOB_CLOSE is an extended limit: Windows rejects it with
+        // ERROR_INVALID_PARAMETER when set through the basic info class.
+        let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+        info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
 
         if let Err(e) = SetInformationJobObject(
             job,
-            JobObjectBasicLimitInformation,
+            JobObjectExtendedLimitInformation,
             &info as *const _ as *const _,
-            std::mem::size_of::<JOBOBJECT_BASIC_LIMIT_INFORMATION>() as u32,
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
         ) {
             tracing::error!("[job] SetInformationJobObject failed: {}", e);
             return;
